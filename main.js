@@ -1,14 +1,14 @@
-console.log("Main JS is connected");
 const map = L.map('map').setView([40.7128, -74.006], 10);
 
-// Load basemap
+// Add base map tiles
 L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
   maxZoom: 18,
 }).addTo(map);
 
-// Load CSV pollution data
+// Store PM2.5 data from CSV
 let pollutionData = {};
 
+// Load CSV using PapaParse
 Papa.parse("nyc_bike_pollution.csv", {
   download: true,
   header: true,
@@ -17,36 +17,40 @@ Papa.parse("nyc_bike_pollution.csv", {
       pollutionData[row.CD] = parseFloat(row.PM25_Value);
     });
 
-    // Load GeoJSON after CSV is parsed
+    // Load GeoJSON map data after CSV is parsed
     fetch("nyc_districts.geojson")
       .then(res => res.json())
       .then(geojson => {
         L.geoJSON(geojson, {
           style: feature => {
-            const cd = feature.properties.BoroCD.toString().padStart(3, '0');
+            const cd = String(feature.properties.BoroCD).padStart(3, '0');
             const pm = pollutionData[cd];
+
             return {
               fillColor: getColor(pm),
               weight: 1,
-              opacity: 1,
               color: 'white',
-              fillOpacity: 0.7
+              fillOpacity: isNaN(pm) ? 0.2 : 0.7,
+              opacity: 1
             };
           },
           onEachFeature: (feature, layer) => {
             const cd = String(feature.properties.BoroCD).padStart(3, '0');
             const pm = pollutionData[cd];
-            console.log("Matching CD:", cd, "→ PM2.5:", pm);
-            layer.bindTooltip(`CD ${cd}<br>PM2.5: ${pm ? pm.toFixed(1) : "N/A"}`);
+
+            layer.bindTooltip(
+              `CD ${cd}<br>PM2.5: ${isNaN(pm) ? "No data" : pm.toFixed(1)}`
+            );
           }
         }).addTo(map);
       });
   }
 });
 
-// Color scale for PM2.5
+// Color scale function
 function getColor(d) {
-  return d > 18 ? '#800026' :
+  return isNaN(d) ? '#ccc' :
+         d > 18 ? '#800026' :
          d > 16 ? '#BD0026' :
          d > 14 ? '#E31A1C' :
          d > 12 ? '#FC4E2A' :
