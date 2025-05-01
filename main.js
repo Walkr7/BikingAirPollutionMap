@@ -1,3 +1,4 @@
+console.log("Main JS is connected");
 const map = L.map('map').setView([40.7128, -74.006], 10);
 
 // Load basemap
