@@ -1,69 +1,4 @@
-console.log("Main JS is connected");
- const map = L.map('map').setView([40.7128, -74.006], 10);
- 
- // Load basemap
- // Add base map tiles
- L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-   maxZoom: 18,
- }).addTo(map);
- 
- // Load CSV pollution data
- // Store PM2.5 data from CSV
- let pollutionData = {};
- 
- // Load CSV using PapaParse
- Papa.parse("nyc_bike_pollution.csv", {
-   download: true,
-   header: true,
- @@ -17,36 +17,40 @@ Papa.parse("nyc_bike_pollution.csv", {
-       pollutionData[row.CD] = parseFloat(row.PM25_Value);
-     });
- 
-     // Load GeoJSON after CSV is parsed
-     // Load GeoJSON map data after CSV is parsed
-     fetch("nyc_districts.geojson")
-       .then(res => res.json())
-       .then(geojson => {
-         L.geoJSON(geojson, {
-           style: feature => {
-             const cd = feature.properties.BoroCD.toString().padStart(3, '0');
-             const cd = String(feature.properties.BoroCD).padStart(3, '0');
-             const pm = pollutionData[cd];
- 
-             return {
-               fillColor: getColor(pm),
-               weight: 1,
-               opacity: 1,
-               color: 'white',
-               fillOpacity: 0.7
-               fillOpacity: isNaN(pm) ? 0.2 : 0.7,
-               opacity: 1
-             };
-           },
-           onEachFeature: (feature, layer) => {
-             const cd = String(feature.properties.BoroCD).padStart(3, '0');
-             const pm = pollutionData[cd];
-             console.log("Matching CD:", cd, "→ PM2.5:", pm);
-             layer.bindTooltip(`CD ${cd}<br>PM2.5: ${pm ? pm.toFixed(1) : "N/A"}`);
- 
-             layer.bindTooltip(
-               `CD ${cd}<br>PM2.5: ${isNaN(pm) ? "No data" : pm.toFixed(1)}`
-             );
-           }
-         }).addTo(map);
-       });
-   }
- });
- 
- // Color scale for PM2.5
- // Color scale function
- function getColor(d) {
-   return d > 18 ? '#800026' :
-   return isNaN(d) ? '#ccc' :
-          d > 18 ? '#800026' :
-          d > 16 ? '#BD0026' :
-          d > 14 ? '#E31A1C' :
-          d > 12 ? '#FC4E2A' :
+// NYC borough stats
 const boroughStats = {
   "Manhattan": { pm25: 7.83, bike: 2.3 },
   "Brooklyn": { pm25: 6.80, bike: 2.0 },
@@ -71,6 +6,8 @@ const boroughStats = {
   "Bronx": { pm25: 7.06, bike: 0.4 },
   "Staten Island": { pm25: 6.14, bike: 0.2 }
 };
+
+// Color scales
 function getColorPm25(d) {
   return d > 7.5 ? '#800026' :
          d > 7.0 ? '#BD0026' :
@@ -86,29 +23,41 @@ function getColorBike(d) {
          d > 0.2 ? '#6baed6' :
                    '#c6dbef';
 }
+
+// Styles for each layer
 function stylePm25(feature) {
   const borough = feature.properties.boro_name;
-  const value = boroughStats[borough]?.pm25;
+  const val = boroughStats[borough]?.pm25;
   return {
-    fillColor: getColorPm25(value),
+    fillColor: getColorPm25(val),
     weight: 1,
-    color: '#fff',
+    color: 'white',
     fillOpacity: 0.7
   };
 }
 
 function styleBike(feature) {
   const borough = feature.properties.boro_name;
-  const value = boroughStats[borough]?.bike;
+  const val = boroughStats[borough]?.bike;
   return {
-    fillColor: getColorBike(value),
+    fillColor: getColorBike(val),
     weight: 1,
-    color: '#fff',
+    color: 'white',
     fillOpacity: 0.7
   };
 }
+
+// Initialize the map
+const map = L.map('map').setView([40.7128, -74.006], 10);
+
+// Add base tiles
+L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  maxZoom: 18
+}).addTo(map);
+
 let pm25Layer, bikeLayer;
 
+// Load GeoJSON
 fetch('nyc_districts.geojson')
   .then(res => res.json())
   .then(data => {
@@ -134,10 +83,9 @@ fetch('nyc_districts.geojson')
       }
     });
 
-    // Add toggle control
-    const baseLayers = {
+    // Layer toggle
+    L.control.layers({
       "Air Pollution (PM2.5)": pm25Layer,
       "Biking Commuters (%)": bikeLayer
-    };
-    L.control.layers(baseLayers).addTo(map);
+    }).addTo(map);
   });
