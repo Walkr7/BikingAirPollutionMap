@@ -70,7 +70,7 @@ fetch('nyc_districts.geojson')
           layer.bindPopup(`<strong>${name}</strong><br>PM2.5: ${val.pm25}<br>Bike %: ${val.bike}`);
         }
       }
-    }).addTo(map);
+    });
 
     bikeLayer = L.geoJson(data, {
       style: styleBike,
@@ -83,7 +83,10 @@ fetch('nyc_districts.geojson')
       }
     });
 
-    // Layer toggle
+    // Add default layer to map
+    pm25Layer.addTo(map);
+
+    // THEN add toggle control
     L.control.layers({
       "Air Pollution (PM2.5)": pm25Layer,
       "Biking Commuters (%)": bikeLayer
