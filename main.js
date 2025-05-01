@@ -35,6 +35,7 @@ Papa.parse("nyc_bike_pollution.csv", {
           onEachFeature: (feature, layer) => {
             const cd = String(feature.properties.BoroCD).padStart(3, '0');
             const pm = pollutionData[cd];
+            console.log("Matching CD:", cd, "→ PM2.5:", pm);
             layer.bindTooltip(`CD ${cd}<br>PM2.5: ${pm ? pm.toFixed(1) : "N/A"}`);
           }
         }).addTo(map);
